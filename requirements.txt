@@ -1,0 +1,7 @@
+Django
+requests
+pandas
+numpy
+scikit-learn
+gunicorn
+whitenoise
