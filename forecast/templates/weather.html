@@ -1,0 +1,338 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#101827">
+    <title>Weather Forecast | Weatherly</title>
+
+    <link rel="icon" href="{% static 'img/site-pic.ico' %}" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+<main class="weather-dashboard">
+    {% if error %}
+    <div class="error-message" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <aside class="side-container">
+        <div class="brand">
+            <div class="brand-icon"><i class="bi bi-cloud-sun-fill"></i></div>
+            <span>Weatherly</span>
+            <span class="brand-pill">LIVE</span>
+        </div>
+
+        <form method="POST" class="weather-search" id="weatherSearchForm">
+            {% csrf_token %}
+            <label class="search-label" for="citySearch">Find your city</label>
+            <div class="search-container">
+                <i class="bi bi-search search-icon"></i>
+                <input id="citySearch" type="text" name="city"
+                       class="geo-input" placeholder="Search a city..."
+                       value="{{ location|default:'' }}"
+                       aria-label="Enter city name" autocomplete="off" required>
+                <button type="submit" class="search-button"
+                        aria-label="Search weather" title="Search weather">
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
+            <p class="search-hint"><i class="bi bi-info-circle"></i> Try a city name, e.g. Bhopal</p>
+        </form>
+
+        {% if city %}
+        <section class="current-weather-panel" aria-label="Current weather">
+            <p class="eyebrow">CURRENT WEATHER</p>
+
+            <div class="current-city">
+                <i class="bi bi-geo-alt-fill"></i>
+                <span>{{ city }}, {{ country }}</span>
+            </div>
+
+            <div class="current-weather-icon" aria-hidden="true">
+                {% if "rain" in description|lower %}
+                    <i class="bi bi-cloud-rain-fill"></i>
+                {% elif "cloud" in description|lower %}
+                    <i class="bi bi-cloud-fill"></i>
+                {% elif "snow" in description|lower %}
+                    <i class="bi bi-snow"></i>
+                {% elif "storm" in description|lower or "thunder" in description|lower %}
+                    <i class="bi bi-cloud-lightning-rain-fill"></i>
+                {% elif "mist" in description|lower or "fog" in description|lower or "haze" in description|lower %}
+                    <i class="bi bi-cloud-fog-fill"></i>
+                {% elif "clear" in description|lower %}
+                    <i class="bi bi-sun-fill"></i>
+                {% else %}
+                    <i class="bi bi-cloud-sun-fill"></i>
+                {% endif %}
+            </div>
+
+            <div class="temperature-display">
+                <span class="day-stats__temperature_value"
+                      data-celsius="{{ current_temp }}">{{ current_temp }}</span>
+                <span class="degree-unit">°C</span>
+            </div>
+
+            <p class="weather-description">{{ description|title }}</p>
+
+            <div class="feels-like">
+                <i class="bi bi-thermometer-half"></i>
+                Feels like
+                <strong class="js-temp" data-celsius="{{ feels_like }}">{{ feels_like }}°C</strong>
+            </div>
+
+            <div class="sidebar-divider"></div>
+
+            <div class="sidebar-metrics">
+                <div class="sidebar-metric">
+                    <div class="metric-icon humidity-icon">
+                        <i class="bi bi-droplet-half"></i>
+                    </div>
+                    <div>
+                        <p>Humidity</p>
+                        <h3>{{ humidity }}<span>%</span></h3>
+                    </div>
+                </div>
+
+                <div class="sidebar-metric">
+                    <div class="metric-icon clouds-icon">
+                        <i class="bi bi-clouds"></i>
+                    </div>
+                    <div>
+                        <p>Cloud cover</p>
+                        <h3>{{ clouds }}<span>%</span></h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-date">
+                <i class="bi bi-calendar3"></i>
+                {% now "l, d F Y" %}
+            </div>
+        </section>
+        {% else %}
+        <section class="welcome-panel">
+            <div class="welcome-icon"><i class="bi bi-cloud-sun"></i></div>
+            <h2>Weather at a glance</h2>
+            <p>Search for a city to discover its current weather and upcoming forecast.</p>
+            <div class="welcome-mini-stats">
+                <span><i class="bi bi-thermometer-half"></i> Temperature</span>
+                <span><i class="bi bi-droplet"></i> Humidity</span>
+            </div>
+        </section>
+        {% endif %}
+
+        <img src="{% static 'img/side-blur.png' %}"
+             class="side-blur" alt="" aria-hidden="true">
+
+        <div class="sidebar-footer">
+            <i class="bi bi-activity"></i>
+            <span>Live weather dashboard</span>
+            <span class="status-dot"></span>
+        </div>
+    </aside>
+
+    <section class="main-container">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">WEATHER OVERVIEW</p>
+                <h1>Weather <span>Forecast</span></h1>
+                <p class="page-subtitle">A clearer view of the day ahead.</p>
+            </div>
+
+            <div class="header-actions">
+                <button class="icon-button" id="unitToggle" type="button"
+                        aria-label="Switch temperature unit" title="Switch °C / °F">
+                    °C <span>/ °F</span>
+                </button>
+                <button class="icon-button" id="themeToggle" type="button"
+                        aria-label="Toggle light and dark theme" title="Toggle theme">
+                    <i class="bi bi-sun"></i>
+                </button>
+                <button class="icon-button" id="refreshButton" type="button"
+                        aria-label="Refresh dashboard" title="Reload weather">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </header>
+
+        {% if city %}
+        <section class="location-banner">
+            <div class="location-banner-icon"><i class="bi bi-geo-alt"></i></div>
+            <div class="location-banner-text">
+                <p>WEATHER IN</p>
+                <h2>{{ city }}, {{ country }}</h2>
+                <span>{% if time %}{{ time|date:"D, d M Y · H:i" }}{% else %}{% now "D, d M Y" %}{% endif %}</span>
+            </div>
+            <div class="condition-badge">
+                <span class="condition-pulse"></span>
+                {{ description|title }}
+            </div>
+        </section>
+
+        <section class="details-section">
+            <div class="section-heading">
+                <div>
+                    <h2>Today's conditions</h2>
+                    <p>Current atmospheric measurements</p>
+                </div>
+                <span class="section-icon"><i class="bi bi-grid-1x2"></i></span>
+            </div>
+
+            <div class="details-grid">
+                <article class="detail-card">
+                    <div class="detail-card-top">
+                        <div class="detail-icon wind-icon"><i class="bi bi-wind"></i></div>
+                        <span>WIND</span>
+                    </div>
+                    <h3>{{ wind }} <small>km/h</small></h3>
+                    <p>Wind speed</p>
+                    <div class="card-accent wind-accent"></div>
+                </article>
+
+                <article class="detail-card">
+                    <div class="detail-card-top">
+                        <div class="detail-icon pressure-icon"><i class="bi bi-speedometer2"></i></div>
+                        <span>PRESSURE</span>
+                    </div>
+                    <h3>{{ pressure }} <small>hPa</small></h3>
+                    <p>Atmospheric pressure</p>
+                    <div class="card-accent pressure-accent"></div>
+                </article>
+
+                <article class="detail-card">
+                    <div class="detail-card-top">
+                        <div class="detail-icon visibility-icon"><i class="bi bi-eye"></i></div>
+                        <span>VISIBILITY</span>
+                    </div>
+                    <h3>{{ visibility }} <small>m</small></h3>
+                    <p>Viewing distance</p>
+                    <div class="card-accent visibility-accent"></div>
+                </article>
+
+                <article class="detail-card">
+                    <div class="detail-card-top">
+                        <div class="detail-icon temp-icon"><i class="bi bi-thermometer-half"></i></div>
+                        <span>TEMPERATURE</span>
+                    </div>
+                    <h3>
+                        <span class="js-temp" data-celsius="{{ MinTemp }}">{{ MinTemp }}</span>°
+                        <small>/
+                            <span class="js-temp" data-celsius="{{ MaxTemp }}">{{ MaxTemp }}</span>°
+                            <span class="unit-label">C</span>
+                        </small>
+                    </h3>
+                    <p>Minimum / Maximum</p>
+                    <div class="card-accent temp-accent"></div>
+                </article>
+            </div>
+        </section>
+
+        <section class="forecast-section">
+            <div class="section-heading">
+                <div>
+                    <h2>Upcoming estimates</h2>
+                    <p>Model-estimated temperature and humidity</p>
+                </div>
+                <span class="section-icon"><i class="bi bi-clock-history"></i></span>
+            </div>
+
+            <div class="forecast">
+                <article class="forecast-item" tabindex="0" role="button"
+                         aria-label="View first forecast point">
+                    <div class="forecast-card-top">
+                        <p class="forecast-time">{{ time1 }}</p>
+                        <span class="forecast-index">01</span>
+                    </div>
+                    <div class="forecast-icon"><i class="bi bi-cloud-sun"></i></div>
+                    <p class="forecast-temperature">
+                        <span class="forecast-temperatureValue" data-celsius="{{ temp1 }}">{{ temp1 }}</span>
+                        <span class="forecast-unit">°C</span>
+                    </p>
+                    <div class="forecast-humidity">
+                        <i class="bi bi-droplet"></i><span>{{ hum1 }}%</span>
+                    </div>
+                </article>
+
+                <article class="forecast-item" tabindex="0" role="button"
+                         aria-label="View second forecast point">
+                    <div class="forecast-card-top">
+                        <p class="forecast-time">{{ time2 }}</p>
+                        <span class="forecast-index">02</span>
+                    </div>
+                    <div class="forecast-icon"><i class="bi bi-cloud"></i></div>
+                    <p class="forecast-temperature">
+                        <span class="forecast-temperatureValue" data-celsius="{{ temp2 }}">{{ temp2 }}</span>
+                        <span class="forecast-unit">°C</span>
+                    </p>
+                    <div class="forecast-humidity">
+                        <i class="bi bi-droplet"></i><span>{{ hum2 }}%</span>
+                    </div>
+                </article>
+
+                <article class="forecast-item" tabindex="0" role="button"
+                         aria-label="View third forecast point">
+                    <div class="forecast-card-top">
+                        <p class="forecast-time">{{ time3 }}</p>
+                        <span class="forecast-index">03</span>
+                    </div>
+                    <div class="forecast-icon"><i class="bi bi-cloud-sun"></i></div>
+                    <p class="forecast-temperature">
+                        <span class="forecast-temperatureValue" data-celsius="{{ temp3 }}">{{ temp3 }}</span>
+                        <span class="forecast-unit">°C</span>
+                    </p>
+                    <div class="forecast-humidity">
+                        <i class="bi bi-droplet"></i><span>{{ hum3 }}%</span>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <div class="section-heading">
+                <div>
+                    <h2>Temperature trend</h2>
+                    <p>Model-estimated temperatures over the coming hours</p>
+                </div>
+                <span class="chart-heading-icon"><i class="bi bi-graph-up-arrow"></i></span>
+            </div>
+            <div class="chart-summary">
+                <span><span class="chart-legend-dot"></span> Temperature</span>
+                <span id="chartRange">Next 3 estimates</span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="chart" aria-label="Temperature forecast chart" role="img"></canvas>
+            </div>
+        </section>
+        {% else %}
+        <section class="empty-state">
+            <div class="empty-state-orbit orbit-one"></div>
+            <div class="empty-state-orbit orbit-two"></div>
+            <div class="empty-state-icon"><i class="bi bi-cloud-sun"></i></div>
+            <p class="eyebrow">YOUR PERSONAL WEATHER SPACE</p>
+            <h2>Your weather, <span>all in one place.</span></h2>
+            <p>Search for a city to explore current conditions, humidity, wind speed and upcoming weather estimates.</p>
+            <div class="empty-feature-row">
+                <span><i class="bi bi-thermometer-half"></i> Live temperature</span>
+                <span><i class="bi bi-graph-up"></i> Visual trends</span>
+                <span><i class="bi bi-droplet"></i> Humidity</span>
+            </div>
+        </section>
+        {% endif %}
+
+        <footer class="page-footer">
+            <span><strong>Weatherly</strong> <span class="footer-dot">·</span> Made for your day</span>
+            <span><i class="bi bi-cloud-sun"></i> Weather data powered by OpenWeather</span>
+        </footer>
+    </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/chartSetup.js' %}"></script>
+</body>
+</html>
