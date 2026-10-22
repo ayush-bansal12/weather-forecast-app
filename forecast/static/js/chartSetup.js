@@ -61,14 +61,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Read original Celsius values from data attributes
     function getCelsius(element) {
-        if (!element) return null;
+    if (!element) return null;
 
-        const raw = element.dataset.celsius ?? element.textContent;
-        const value = Number.parseFloat(
-            String(raw).replace(/[^\d.+-]/g, '')
-        );
+    const raw = element.dataset.celsius;
+    const value = Number.parseFloat(raw);
 
-        return Number.isFinite(value) ? value : null;
+    return Number.isFinite(value) ? value : null;
     }
 
     function convertTemperature(celsius) {
